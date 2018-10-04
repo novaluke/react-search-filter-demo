@@ -4,6 +4,7 @@
     "esModuleInterop": true,
     "target": "es5",
     "moduleResolution": "node",
+    "jsx": "react",
     "sourceMap": true,
     "outDir": "dist",
     "baseUrl": ".",

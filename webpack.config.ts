@@ -6,7 +6,7 @@ import webpack from "webpack";
 
 const pathTo = (relPath: string) => path.resolve(__dirname, relPath);
 
-module.exports = <webpack.Configuration>{
+module.exports = {
   entry: "./src/index.tsx",
   module: {
     rules: [
@@ -14,8 +14,8 @@ module.exports = <webpack.Configuration>{
         exclude: /node_modules/,
         test: /\.tsx?$/,
         use: "awesome-typescript-loader",
-      }
-    ]
+      },
+    ],
   },
   output: {
     filename: "bundle-[hash].js",
@@ -23,10 +23,10 @@ module.exports = <webpack.Configuration>{
   },
   plugins: [
     new CheckerPlugin(),
-    new HtmlWebpackPlugin({ template: pathTo("src/index.html")}),
+    new HtmlWebpackPlugin({ template: pathTo("src/index.html") }),
   ],
   resolve: {
     extensions: [".ts", ".tsx", ".js", ".jsx"],
     plugins: [new TsconfigPathsPlugin()],
   },
-}
+} as webpack.Configuration;

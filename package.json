@@ -11,5 +11,8 @@
     "name": "Luke Mayhew",
     "email": "luke@webuildlegends.com"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^3.1.1"
+  }
 }

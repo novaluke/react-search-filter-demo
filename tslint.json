@@ -1,0 +1,31 @@
+{
+  "defaultSeverity": "error",
+  "extends": [
+    "tslint:recommended",
+    "tslint-react",
+    "tslint-eslint-rules",
+    "tslint-config-airbnb",
+    "tslint-config-prettier",
+    "tslint-plugin-prettier"
+  ],
+  "jsRules": {},
+  "rules": {
+    "import-name": [true, {
+      "htmlWebpackPlugin": "HtmlWebpackPlugin",
+      "react": "React"
+    }],
+    "prettier": [true, { "trailingComma": "all"}],
+    "interface-name": [false],
+    "variable-name": [true, "ban-keywords", "check-format", "allow-pascal-case"],
+    "jsx-boolean-value": "always",
+    "no-unused-expression": true,
+    "no-unused-variable": true,
+    "object-literal-sort-keys": [true, "shorthand-first"],
+    "member-ordering": false,
+    "array-type": [true, "array-simple"],
+    "prefer-array-literal": [true, { "allow-type-parameters": true } ],
+    "no-console": true,
+    "trailing-comma": [true, {"multiline": "always", "singleline": "never"}]
+  },
+  "rulesDirectory": []
+}

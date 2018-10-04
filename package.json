@@ -1,0 +1,15 @@
+{
+  "name": "react-search-filter-demo",
+  "version": "0.0.1",
+  "description": "A comprehensively explained demo of a React search and filter component combo",
+  "main": "dist/index.js",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "author": {
+    "name": "Luke Mayhew",
+    "email": "luke@webuildlegends.com"
+  },
+  "license": "MIT"
+}

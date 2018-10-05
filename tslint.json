@@ -12,6 +12,7 @@
   "rules": {
     "import-name": [true, {
       "htmlWebpackPlugin": "HtmlWebpackPlugin",
+      "cleanWebpackPlugin": "CleanWebpackPlugin",
       "react": "React"
     }],
     "prettier": [true, { "trailingComma": "all"}],

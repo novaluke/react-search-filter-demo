@@ -1,10 +1,12 @@
 import { CheckerPlugin } from "awesome-typescript-loader";
+import CleanWebpackPlugin from "clean-webpack-plugin";
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import path from "path";
 import { TsconfigPathsPlugin } from "tsconfig-paths-webpack-plugin";
 import webpack from "webpack";
 
 const pathTo = (relPath: string) => path.resolve(__dirname, relPath);
+const outputPath = pathTo("dist");
 
 module.exports = {
   entry: "./src/index.tsx",
@@ -19,9 +21,10 @@ module.exports = {
   },
   output: {
     filename: "bundle-[hash].js",
-    path: pathTo("dist"),
+    path: outputPath,
   },
   plugins: [
+    new CleanWebpackPlugin([outputPath]),
     new CheckerPlugin(),
     new HtmlWebpackPlugin({ template: pathTo("src/index.html") }),
   ],

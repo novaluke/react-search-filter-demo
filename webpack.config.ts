@@ -15,7 +15,27 @@ module.exports = {
       {
         exclude: /node_modules/,
         test: /\.tsx?$/,
-        use: "awesome-typescript-loader",
+        use: [
+          {
+            loader: "awesome-typescript-loader",
+            options: {
+              babelCore: "@babel/core",
+              babelOptions: {
+                babelrc: false,
+                presets: [
+                  [
+                    "@babel/preset-env",
+                    {
+                      targets: "> 0.25%, not dead",
+                      useBuiltIns: "usage",
+                    },
+                  ],
+                ],
+              },
+              useBabel: true,
+            },
+          },
+        ],
       },
     ],
   },

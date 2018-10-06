@@ -1,0 +1,25 @@
+.search-input-container {
+  align-items: center;
+  border: 1px solid;
+  border-radius: 5px;
+  display: inline-flex;
+}
+
+.search-input-textinput {
+  background: none;
+  border: 0;
+  color: inherit;
+  padding: 5px;
+}
+
+.search-input-textinput::placeholder {
+  color: inherit;
+}
+
+.search-input-textinput:focus {
+  outline: none;
+}
+
+.search-input-icon {
+  padding: 5px;
+}

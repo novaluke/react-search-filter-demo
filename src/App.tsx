@@ -1,5 +1,23 @@
 import React from "react";
 
-const App: React.SFC = () => <h1>Hello world!</h1>;
+import SearchInput from "./SearchInput";
+
+const styles = {
+  headerBar: {
+    backgroundColor: "#0af",
+    display: "flex",
+    height: "35px",
+    justifyContent: "flex-end",
+    padding: "5px",
+  },
+};
+
+const noop = () => null;
+
+const App: React.SFC = () => (
+  <div style={styles.headerBar}>
+    <SearchInput onChange={noop} />
+  </div>
+);
 
 export default App;

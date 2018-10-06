@@ -1,0 +1,55 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Filter when created with a blank query string renders nothing 1`] = `
+<div>
+  <div />
+</div>
+`;
+
+exports[`Filter when created with a query string when an error is encountered displays an error message 1`] = `
+<span>
+  An error occurred
+</span>
+`;
+
+exports[`Filter when created with a query string when the API query is successful renders the results 1`] = `
+<div>
+  Spicy Chicken
+</div>
+`;
+
+exports[`Filter when created with a query string when the API query is successful with no matches found shows a message indicating no results matched the query 1`] = `
+<span>
+  No results found for "
+  chicken
+  "
+</span>
+`;
+
+exports[`Filter when the query string is updated shows a loading indicator above the previous results 1`] = `
+"Snapshot Diff:
+- First value
++ Second value
+
+@@ -1,7 +1,20 @@
+  <DocumentFragment>
+    <div>
++     <svg
++       data-testid=\\"loading\\"
++       fill=\\"currentColor\\"
++       height=\\"1em\\"
++       stroke=\\"currentColor\\"
++       stroke-width=\\"0\\"
++       viewBox=\\"0 0 512 512\\"
++       width=\\"1em\\"
++     >
++       <path
++         d=\\"M304 48c0 26.51-21.49 48-48 48s-48-21.49-48-48 21.49-48 48-48 48 21.49 48 48zm-48 368c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zm208-208c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.49-48-48-48zM96 256c0-26.51-21.49-48-48-48S0 229.49 0 256s21.49 48 48 48 48-21.49 48-48zm12.922 99.078c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.491-48-48-48zm294.156 0c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48c0-26.509-21.49-48-48-48zM108.922 60.922c-26.51 0-48 21.49-48 48s21.49 48 48 48 48-21.49 48-48-21.491-48-48-48z\\"
++       />
++     </svg>
+      <div>
+        Spicy Chicken
+      </div>
+      <div>
+        Rotisserie Chicken"
+`;

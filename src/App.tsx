@@ -1,5 +1,6 @@
 import React from "react";
 
+import Filter from "./Filter";
 import SearchInput from "./SearchInput";
 
 const styles = {
@@ -12,12 +13,31 @@ const styles = {
   },
 };
 
-const noop = () => null;
+class App extends React.Component<{}, { query: string }> {
+  constructor(props: {}) {
+    super(props);
+    this.state = {
+      query: "",
+    };
+  }
 
-const App: React.SFC = () => (
-  <div style={styles.headerBar}>
-    <SearchInput onChange={noop} />
-  </div>
-);
+  public onQueryChange = (query: string) => {
+    this.setState({ query });
+  };
+
+  public render() {
+    const { query } = this.state;
+    return (
+      <div>
+        <div style={styles.headerBar}>
+          <SearchInput onChange={this.onQueryChange} />
+        </div>
+        <div>
+          <Filter query={query} />
+        </div>
+      </div>
+    );
+  }
+}
 
 export default App;

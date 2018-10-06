@@ -9,7 +9,7 @@
     "dev": "webpack-dev-server --mode development",
     "lint": "tslint -p tsconfig.json && tsc --noEmit",
     "test": "jest",
-    "validate": "run-p lint test"
+    "validate": "run-p lint test build"
   },
   "author": {
     "name": "Luke Mayhew",

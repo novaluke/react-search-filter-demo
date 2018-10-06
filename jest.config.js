@@ -9,6 +9,7 @@ module.exports = {
   moduleDirectories: ["src", "node_modules"],
   watchPathIgnorePatterns: ["<rootDir>/dist"],
   testPathIgnorePatterns: ["<rootDir>/test/helpers/.*"],
+  setupTestFrameworkScriptFile: "<rootDir>/jest.init.ts",
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true

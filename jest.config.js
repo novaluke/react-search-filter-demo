@@ -4,6 +4,7 @@ module.exports = {
   testEnvironment: "jsdom",
   moduleNameMapper: {
     "^test/(.*)": "<rootDir>/test/$1",
+    "\\.(css|less)$": "<rootDir>/test/helpers/stubMapping.js"
   },
   moduleDirectories: ["src", "node_modules"],
   watchPathIgnorePatterns: ["<rootDir>/dist"],

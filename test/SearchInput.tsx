@@ -60,6 +60,40 @@ describe("SearchInput", () => {
     expect(label.contains(icon)).toBe(true);
   });
 
+  describe("when the input has text", () => {
+    xit("uses a cancel icon", () => {
+      /* const { container } = render(<SearchInput onChange={noop} />); */
+      /* const input = container.querySelector("input")!; */
+      /* const icon = container.querySelector("svg")!; */
+      /* fireEvent.change(input, { target: { value: "cats" } }); */
+      // TODO use an icon library that facilitates being able to assert on the icons
+    });
+
+    it("clears the input when the icon is clicked", () => {
+      const { container } = render(<SearchInput onChange={noop} />);
+      const input = container.querySelector("input")!;
+
+      fireEvent.change(input, { target: { value: "cats" } });
+      expect(input.value).toEqual("cats");
+
+      // Have to typecast to `any` because `.click` is typed to only work on an
+      // HTML element, not an SVG one (even though SVG does have `onclick` etc.)
+      fireEvent.click(container.querySelector("svg")! as any);
+
+      expect(input.value).toEqual("");
+    });
+  });
+
+  describe("when the input is empty", () => {
+    xit("uses a search icon", () => {
+      /* const { container } = render(<SearchInput onChange={noop} />); */
+      /* const input = container.querySelector("input")!; */
+      /* const icon = container.querySelector("svg")!; */
+      /* fireEvent.change(input, { target: { value: "" } }); */
+      // TODO use an icon library that facilitates being able to assert on the icons
+    });
+  });
+
   describe("when the input is focused", () => {
     it("expands", () => {
       const input = render(

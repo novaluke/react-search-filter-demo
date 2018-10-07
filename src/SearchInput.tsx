@@ -1,5 +1,5 @@
 import React from "react";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaTimesCircle } from "react-icons/fa";
 import { Spring } from "react-spring";
 
 import "./SearchInput.css";
@@ -13,7 +13,7 @@ export interface Props {
 
 interface State {
   isOpen: boolean;
-  hasValue: boolean;
+  value: string;
 }
 
 class SearchInput extends React.Component<Props, State> {
@@ -26,30 +26,32 @@ class SearchInput extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
-      hasValue: false,
       isOpen: false,
+      value: "",
     };
   }
 
   public onFocus = () => this.setState({ isOpen: true });
 
   public onBlur = () => {
-    if (!this.state.hasValue) {
+    if (!this.state.value) {
       this.setState({ isOpen: false });
     }
   };
 
-  // Keep track of whether or not the input has a value, so onBlur can use it to
-  // make closing the input contingent on being empty
-  public onChange = ({
-    target: { value },
-  }: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ hasValue: value.length > 0 });
+  public onChange = ({ target: { value } }: { target: { value: string } }) => {
+    this.setState({ value });
     this.props.onChange(value);
   };
 
+  public reset = () => {
+    // Mimic the structure of a change event so we don't have to add another
+    // handler to accept just strings
+    this.onChange({ target: { value: "" } });
+  };
+
   public render() {
-    const { isOpen } = this.state;
+    const { isOpen, value } = this.state;
     const { closedWidth, openWidth, color } = this.props;
     return (
       <label
@@ -63,6 +65,7 @@ class SearchInput extends React.Component<Props, State> {
           {({ width }) => (
             <input
               type="text"
+              value={value}
               className="search-input-textinput"
               style={{ width }}
               onChange={this.onChange}
@@ -72,7 +75,11 @@ class SearchInput extends React.Component<Props, State> {
             />
           )}
         </Spring>
-        <FaSearch className="search-input-icon" />
+        {value ? (
+          <FaTimesCircle className="search-input-icon" onClick={this.reset} />
+        ) : (
+          <FaSearch className="search-input-icon" />
+        )}
       </label>
     );
   }

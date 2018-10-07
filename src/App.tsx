@@ -1,6 +1,6 @@
 import React from "react";
 
-import Filter from "./Filter";
+import { Filter } from "./Filter";
 import SearchInput from "./SearchInput";
 
 const styles = {

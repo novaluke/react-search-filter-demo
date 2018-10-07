@@ -3,7 +3,7 @@ import React from "react";
 import { render, waitForElement } from "react-testing-library";
 import snapshotDiff from "snapshot-diff";
 
-import Filter from "Filter";
+import { Filter } from "Filter";
 
 const stubRequest = (
   query: string,

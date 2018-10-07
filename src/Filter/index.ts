@@ -1,1 +1,2 @@
-export { default as Filter, Props as FilterProps } from "./Filter";
+export { default as Filter } from "./Filter";
+export { Props as FilterProps } from "./operators";

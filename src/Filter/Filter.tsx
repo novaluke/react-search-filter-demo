@@ -3,7 +3,7 @@ import { FaSpinner } from "react-icons/fa";
 import { combineLatest, merge, Observable } from "rxjs";
 import { debounceTime, map, mapTo, partition, switchMap } from "rxjs/operators";
 
-import { AsyncValueTag, init } from "async";
+import { caseOf, init } from "async";
 import { componentFromStream } from "../streamHelpers";
 import {
   fetchResults,
@@ -59,23 +59,24 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
   ).pipe(reducer(initialState));
 
   return combineLatest(props$, state$).pipe(
-    map(([{ query }, results]) => (
-      <div>
-        {results.state === AsyncValueTag.ERROR && (
-          <span>An error occurred</span>
-        )}
-        {results.state === AsyncValueTag.LOADING && (
-          <FaSpinner data-testid="loading" />
-        )}
-        {results.state === AsyncValueTag.SUCCESS &&
-          results.results.length === 0 && (
+    map(([{ query }, state]) =>
+      caseOf(state, {
+        error: () => <span>An error occurred</span>,
+        init: () => null,
+        loading: results => (
+          <div>
+            <FaSpinner data-testid="loading" />
+            {renderResults(results)}
+          </div>
+        ),
+        success: results =>
+          results.length > 0 ? (
+            renderResults(results)
+          ) : (
             <span>No results found for "{query}"</span>
-          )}
-        {(results.state === AsyncValueTag.SUCCESS ||
-          results.state === AsyncValueTag.LOADING) &&
-          renderResults(results.results)}
-      </div>
-    )),
+          ),
+      }),
+    ),
   );
 });
 

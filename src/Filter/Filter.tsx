@@ -1,16 +1,9 @@
 import React from "react";
 import { FaSpinner } from "react-icons/fa";
 import { combineLatest, merge, Observable } from "rxjs";
-import {
-  debounceTime,
-  map,
-  mapTo,
-  partition,
-  scan,
-  switchMap,
-} from "rxjs/operators";
+import { debounceTime, map, mapTo, partition, switchMap } from "rxjs/operators";
 
-import { AsyncValueTag, init, loading } from "async";
+import { AsyncValueTag, init } from "async";
 import { componentFromStream } from "../streamHelpers";
 import {
   fetchResults,
@@ -19,6 +12,8 @@ import {
   State,
   whenQueryChanges,
 } from "./operators";
+import { reducer } from "./reducer";
+import { fetchStart, reset } from "./updates";
 
 const renderResults = (results: Meal[] | null) => {
   if (results === null) {
@@ -26,18 +21,6 @@ const renderResults = (results: Meal[] | null) => {
   }
   return results.map(result => <div key={result.idMeal}>{result.strMeal}</div>);
 };
-
-const updateState = (initialState: State) =>
-  scan((state: State, update: State) => {
-    if (
-      update.state === AsyncValueTag.LOADING &&
-      (state.state === AsyncValueTag.LOADING ||
-        state.state === AsyncValueTag.SUCCESS)
-    ) {
-      return loading(state.results);
-    }
-    return update;
-  }, initialState);
 
 const Filter = componentFromStream((props$: Observable<Props>) => {
   const initialState: State = init();
@@ -52,7 +35,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
     query => query.length > 0,
   )(props$.pipe(whenQueryChanges));
   const state$ = merge(
-    queryReset$.pipe(mapTo(init() as State)),
+    queryReset$.pipe(mapTo(reset())),
     // It may seem strange that the stream that emits the loading state is
     // separate from - and operates independently to - the stream that actually
     // does the loading. However, the request is debounced, and we don't want to
@@ -64,7 +47,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
     // sense for it to operate independtly of the request triggering. In this
     // case, having to program in streams guides the developer into developing
     // proper coupling.
-    newQueries$.pipe(mapTo(loading(null) as State)),
+    newQueries$.pipe(mapTo(fetchStart())), // TODO rename to be about query not AJAX
     newQueries$.pipe(
       debounceTime(500),
       // Run the fetch function, which returns a stream, and only use the latest
@@ -73,7 +56,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
       // being explicit helps with readability/comprehensibility.
       switchMap(query => fetchResults(query)),
     ),
-  ).pipe(updateState(initialState));
+  ).pipe(reducer(initialState));
 
   return combineLatest(props$, state$).pipe(
     map(([{ query }, results]) => (

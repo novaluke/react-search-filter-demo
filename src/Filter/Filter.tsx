@@ -13,7 +13,7 @@ import {
   whenQueryChanges,
 } from "./operators";
 import { reducer } from "./reducer";
-import { fetchStart, reset } from "./updates";
+import { reset, searchStart } from "./updates";
 
 const renderResults = (results: Meal[] | null) => {
   if (results === null) {
@@ -24,6 +24,7 @@ const renderResults = (results: Meal[] | null) => {
 
 const Filter = componentFromStream((props$: Observable<Props>) => {
   const initialState: State = init();
+
   // Split a stream in two based on values that pass or fail the predicate
   // function. Helps to ensure you've covered all cases, compared to defining
   // the two streams separately. The strange syntax is due to an idosyncracity
@@ -34,6 +35,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
     // better real-world value, but maintainability and extensibility sure do).
     query => query.length > 0,
   )(props$.pipe(whenQueryChanges));
+
   const state$ = merge(
     queryReset$.pipe(mapTo(reset())),
     // It may seem strange that the stream that emits the loading state is
@@ -47,7 +49,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
     // sense for it to operate independtly of the request triggering. In this
     // case, having to program in streams guides the developer into developing
     // proper coupling.
-    newQueries$.pipe(mapTo(fetchStart())), // TODO rename to be about query not AJAX
+    newQueries$.pipe(mapTo(searchStart())),
     newQueries$.pipe(
       debounceTime(500),
       // Run the fetch function, which returns a stream, and only use the latest

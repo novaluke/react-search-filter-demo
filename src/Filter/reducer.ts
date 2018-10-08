@@ -26,7 +26,7 @@ const valueOrNull = <T>(asyncValue: AsyncValue<T>) => {
 export const reducer = (initialState: State) =>
   scan((state: State, update: Update) => {
     switch (update.type) {
-      case UpdateTag.FETCH_START:
+      case UpdateTag.SEARCH_START:
         return loading(valueOrNull(state));
       case UpdateTag.FETCH_SUCCESS:
         return success(update.payload);

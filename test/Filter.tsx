@@ -109,6 +109,13 @@ describe("Filter", () => {
 
         expect(queryByTestId("loading")).toBeNull();
       });
+
+      it("doesn't display the 'no results' message", () => {
+        const { queryByText } = render(<Filter query={query} />);
+        jest.runAllTimers();
+
+        expect(queryByText(query, { exact: false })).toBeNull();
+      });
     });
   });
 

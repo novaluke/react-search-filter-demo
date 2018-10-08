@@ -51,7 +51,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
       <div>
         {hasError ? <span>An error occurred</span> : null}
         {loading ? <FaSpinner data-testid="loading" /> : null}
-        {results.length === 0 && query && !loading ? (
+        {results.length === 0 && query && !loading && !hasError ? (
           <span>No results found for "{query}"</span>
         ) : (
           results.map(result => <div key={result.idMeal}>{result.strMeal}</div>)

@@ -1,17 +1,46 @@
 import React from "react";
 import { FaSpinner } from "react-icons/fa";
 import { combineLatest, merge, Observable } from "rxjs";
-import { debounceTime, map, mapTo, partition, switchMap } from "rxjs/operators";
+import {
+  debounceTime,
+  map,
+  mapTo,
+  partition,
+  scan,
+  switchMap,
+} from "rxjs/operators";
 
-import { componentFromStream, mergeStates } from "../streamHelpers";
-import { fetchResults, Props, State, whenQueryChanges } from "./operators";
+import { AsyncValueTag, init, loading } from "async";
+import { componentFromStream } from "../streamHelpers";
+import {
+  fetchResults,
+  Meal,
+  Props,
+  State,
+  whenQueryChanges,
+} from "./operators";
+
+const renderResults = (results: Meal[] | null) => {
+  if (results === null) {
+    return null;
+  }
+  return results.map(result => <div key={result.idMeal}>{result.strMeal}</div>);
+};
+
+const updateState = (initialState: State) =>
+  scan((state: State, update: State) => {
+    if (
+      update.state === AsyncValueTag.LOADING &&
+      (state.state === AsyncValueTag.LOADING ||
+        state.state === AsyncValueTag.SUCCESS)
+    ) {
+      return loading(state.results);
+    }
+    return update;
+  }, initialState);
 
 const Filter = componentFromStream((props$: Observable<Props>) => {
-  const initialState: State = {
-    hasError: false,
-    loading: false,
-    results: [],
-  };
+  const initialState: State = init();
   // Split a stream in two based on values that pass or fail the predicate
   // function. Helps to ensure you've covered all cases, compared to defining
   // the two streams separately. The strange syntax is due to an idosyncracity
@@ -23,7 +52,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
     query => query.length > 0,
   )(props$.pipe(whenQueryChanges));
   const state$ = merge(
-    queryReset$.pipe(mapTo({ hasError: false, loading: false, results: [] })),
+    queryReset$.pipe(mapTo(init() as State)),
     // It may seem strange that the stream that emits the loading state is
     // separate from - and operates independently to - the stream that actually
     // does the loading. However, the request is debounced, and we don't want to
@@ -35,7 +64,7 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
     // sense for it to operate independtly of the request triggering. In this
     // case, having to program in streams guides the developer into developing
     // proper coupling.
-    newQueries$.pipe(mapTo({ hasError: false, loading: true })),
+    newQueries$.pipe(mapTo(loading(null) as State)),
     newQueries$.pipe(
       debounceTime(500),
       // Run the fetch function, which returns a stream, and only use the latest
@@ -44,18 +73,24 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
       // being explicit helps with readability/comprehensibility.
       switchMap(query => fetchResults(query)),
     ),
-  ).pipe(mergeStates(initialState));
+  ).pipe(updateState(initialState));
 
   return combineLatest(props$, state$).pipe(
-    map(([{ query }, { hasError, loading, results }]) => (
+    map(([{ query }, results]) => (
       <div>
-        {hasError ? <span>An error occurred</span> : null}
-        {loading ? <FaSpinner data-testid="loading" /> : null}
-        {results.length === 0 && query && !loading && !hasError ? (
-          <span>No results found for "{query}"</span>
-        ) : (
-          results.map(result => <div key={result.idMeal}>{result.strMeal}</div>)
+        {results.state === AsyncValueTag.ERROR && (
+          <span>An error occurred</span>
         )}
+        {results.state === AsyncValueTag.LOADING && (
+          <FaSpinner data-testid="loading" />
+        )}
+        {results.state === AsyncValueTag.SUCCESS &&
+          results.results.length === 0 && (
+            <span>No results found for "{query}"</span>
+          )}
+        {(results.state === AsyncValueTag.SUCCESS ||
+          results.state === AsyncValueTag.LOADING) &&
+          renderResults(results.results)}
       </div>
     )),
   );

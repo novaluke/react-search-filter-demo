@@ -2,15 +2,13 @@ import { Observable, of } from "rxjs";
 import { ajax } from "rxjs/ajax";
 import { catchError, distinctUntilChanged, map, pluck } from "rxjs/operators";
 
+import { AsyncValue, error, success } from "async";
+
 export interface Props {
   query: string;
 }
 
-export interface State {
-  hasError: boolean;
-  loading: boolean;
-  results: Meal[];
-}
+export type State = AsyncValue<Meal[]>;
 
 export interface Meal {
   idMeal: string; // id
@@ -20,14 +18,10 @@ export interface Meal {
 const url = (query: string) =>
   `https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`;
 
-export const fetchResults = (query: string) =>
+export const fetchResults = (query: string): Observable<State> =>
   ajax.getJSON(url(query)).pipe(
-    map((response: any) => ({
-      hasError: false,
-      loading: false,
-      results: response.meals || [],
-    })),
-    catchError(() => of({ hasError: true, loading: false })),
+    map((response: any) => success(response.meals || [])),
+    catchError(() => of(error() as State)),
   );
 
 // Can be used as a `pipe` operator

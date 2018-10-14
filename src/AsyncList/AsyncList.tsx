@@ -22,7 +22,7 @@ const renderResults = (results: Meal[] | null) => {
   return results.map(result => <div key={result.idMeal}>{result.strMeal}</div>);
 };
 
-const Filter = componentFromStream((props$: Observable<Props>) => {
+const AsyncList = componentFromStream((props$: Observable<Props>) => {
   const initialState: State = init();
 
   // Split a stream in two based on values that pass or fail the predicate
@@ -82,4 +82,4 @@ const Filter = componentFromStream((props$: Observable<Props>) => {
   );
 });
 
-export default Filter;
+export default AsyncList;

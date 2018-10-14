@@ -1,20 +1,20 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Filter when created with a blank query string renders nothing 1`] = `<div />`;
+exports[`AsyncList when created with a blank query string renders nothing 1`] = `<div />`;
 
-exports[`Filter when created with a query string when an error is encountered displays an error message 1`] = `
+exports[`AsyncList when created with a query string when an error is encountered displays an error message 1`] = `
 <span>
   An error occurred
 </span>
 `;
 
-exports[`Filter when created with a query string when the API query is successful renders the results 1`] = `
+exports[`AsyncList when created with a query string when the API query is successful renders the results 1`] = `
 <div>
   Spicy Chicken
 </div>
 `;
 
-exports[`Filter when created with a query string when the API query is successful with no matches found shows a message indicating no results matched the query 1`] = `
+exports[`AsyncList when created with a query string when the API query is successful with no matches found shows a message indicating no results matched the query 1`] = `
 <span>
   No results found for "
   chicken
@@ -22,7 +22,7 @@ exports[`Filter when created with a query string when the API query is successfu
 </span>
 `;
 
-exports[`Filter when the query string is updated shows a loading indicator above the previous results 1`] = `
+exports[`AsyncList when the query string is updated shows a loading indicator above the previous results 1`] = `
 "Snapshot Diff:
 - First value
 + Second value

@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Filter } from "./Filter";
+import { AsyncList } from "./AsyncList";
 import SearchInput from "./SearchInput";
 
 const styles = {
@@ -33,7 +33,7 @@ class App extends React.Component<{}, { query: string }> {
           <SearchInput onChange={this.onQueryChange} />
         </div>
         <div>
-          <Filter query={query} />
+          <AsyncList query={query} />
         </div>
       </div>
     );

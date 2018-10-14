@@ -1,6 +1,6 @@
 import React from "react";
 
-import { AsyncList } from "./AsyncList";
+import { AsyncList, Meal } from "./AsyncList";
 import SearchInput from "./SearchInput";
 
 const styles = {
@@ -12,6 +12,10 @@ const styles = {
     padding: "5px",
   },
 };
+
+const renderListItem = ({ idMeal, strMeal }: Meal) => (
+  <div key={idMeal}>{strMeal}</div>
+);
 
 class App extends React.Component<{}, { query: string }> {
   constructor(props: {}) {
@@ -33,7 +37,7 @@ class App extends React.Component<{}, { query: string }> {
           <SearchInput onChange={this.onQueryChange} />
         </div>
         <div>
-          <AsyncList query={query} />
+          <AsyncList query={query} render={renderListItem} />
         </div>
       </div>
     );

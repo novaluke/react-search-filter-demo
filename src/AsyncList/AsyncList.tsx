@@ -15,11 +15,11 @@ import {
 import { reducer } from "./reducer";
 import { reset, searchStart } from "./updates";
 
-const renderResults = (results: Meal[] | null) => {
+const renderResults = (results: Meal[] | null, render: React.SFC<Meal>) => {
   if (results === null) {
     return null;
   }
-  return results.map(result => <div key={result.idMeal}>{result.strMeal}</div>);
+  return results.map(render);
 };
 
 const AsyncList = componentFromStream((props$: Observable<Props>) => {
@@ -61,19 +61,19 @@ const AsyncList = componentFromStream((props$: Observable<Props>) => {
   ).pipe(reducer(initialState));
 
   return combineLatest(props$, state$).pipe(
-    map(([{ query }, state]) =>
+    map(([{ query, render }, state]) =>
       caseOf(state, {
         error: () => <span>An error occurred</span>,
         init: () => null,
         loading: results => (
           <div>
             <FaSpinner data-testid="loading" />
-            {renderResults(results)}
+            {renderResults(results, render)}
           </div>
         ),
         success: results =>
           results.length > 0 ? (
-            renderResults(results)
+            renderResults(results, render)
           ) : (
             <span>No results found for "{query}"</span>
           ),

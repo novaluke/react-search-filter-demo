@@ -60,6 +60,20 @@ describe("SearchInput", () => {
     expect(label.contains(icon)).toBe(true);
   });
 
+  it("updates the value when the value prop is changed", () => {
+    const value1 = "foo";
+    const value2 = "bar";
+    const { container } = render(
+      <SearchInput onChange={noop} setValue={value1} />,
+    );
+    const input = container.querySelector("input")!;
+    expect(input.value).toEqual(value1);
+
+    fireEvent.change(input, { target: { value: value2 } });
+
+    expect(input.value).toEqual(value2);
+  });
+
   describe("when the input has text", () => {
     xit("uses a cancel icon", () => {
       /* const { container } = render(<SearchInput onChange={noop} />); */

@@ -33,6 +33,7 @@ class App extends React.Component<{}, { query: string }> {
 
   public render() {
     const { query } = this.state;
+    const noResultsComponent = <span>No results found for "{query}"</span>;
     return (
       <div>
         <div style={styles.headerBar}>
@@ -43,6 +44,7 @@ class App extends React.Component<{}, { query: string }> {
             query={query}
             render={renderListItem}
             errorComponent={errorComponent}
+            noResultsComponent={noResultsComponent}
           />
         </div>
       </div>

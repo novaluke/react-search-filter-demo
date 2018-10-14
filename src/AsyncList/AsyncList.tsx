@@ -61,7 +61,7 @@ const AsyncList = componentFromStream((props$: Observable<Props>) => {
   ).pipe(reducer(initialState));
 
   return combineLatest(props$, state$).pipe(
-    map(([{ query, render, errorComponent }, state]) =>
+    map(([{ render, errorComponent, noResultsComponent }, state]) =>
       caseOf(state, {
         // TODO pass the error in so errorComponent can provide useful contextual info
         error: () => errorComponent,
@@ -73,11 +73,9 @@ const AsyncList = componentFromStream((props$: Observable<Props>) => {
           </div>
         ),
         success: results =>
-          results.length > 0 ? (
-            renderResults(results, render)
-          ) : (
-            <span>No results found for "{query}"</span>
-          ),
+          results.length > 0
+            ? renderResults(results, render)
+            : noResultsComponent,
       }),
     ),
   );

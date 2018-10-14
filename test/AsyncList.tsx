@@ -22,8 +22,11 @@ describe("AsyncList", () => {
   const renderFn = jest.fn();
   const errText = "This is an error message";
   const errorComponent = <span>{errText}</span>;
+  const noResultsText = "No results found";
+  const noResultsComponent = <span>{noResultsText}</span>;
   const defaultProps: Props = {
     errorComponent,
+    noResultsComponent,
     query: "",
     render: renderFn,
   };
@@ -80,13 +83,13 @@ describe("AsyncList", () => {
       });
 
       describe("with no matches found", () => {
-        it("shows a message indicating no results matched the query", () => {
+        it("renders the noResultsComponent", () => {
           // API returns `meals: null` rather than `meals: []` when no match found
           stubRequest(query, null);
           const { queryByText } = render(component({ query }));
           jest.runAllTimers();
 
-          expect(queryByText(query, { exact: false })).toMatchSnapshot();
+          expect(queryByText(noResultsText)).not.toBeNull();
         });
       });
 
@@ -159,15 +162,14 @@ describe("AsyncList", () => {
         );
         jest.runAllTimers();
         // Avoid false positives
-        expect(queryByText(firstQuery, { exact: false })).not.toBeNull();
+        expect(queryByText(noResultsText)).not.toBeNull();
 
         // Leave the second request hanging so that it doesn't resolve before
         // checking the loading indicator
         (ajax.getJSON as any).mockImplementation(() => never());
         rerender(component({ query: secondQuery }));
 
-        expect(queryByText(firstQuery, { exact: false })).toBeNull();
-        expect(queryByText(secondQuery, { exact: false })).toBeNull();
+        expect(queryByText(noResultsText)).toBeNull();
       });
     });
 

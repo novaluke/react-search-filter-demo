@@ -10,6 +10,7 @@ export interface Props {
   query: string;
   render: React.SFC<Meal>;
   errorComponent: JSX.Element;
+  noResultsComponent: JSX.Element;
 }
 
 export type State = AsyncValue<Meal[]>;

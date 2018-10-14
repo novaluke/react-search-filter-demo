@@ -17,6 +17,8 @@ const renderListItem = ({ idMeal, strMeal }: Meal) => (
   <div key={idMeal}>{strMeal}</div>
 );
 
+const errorComponent = <span>An unknown error occurred</span>;
+
 class App extends React.Component<{}, { query: string }> {
   constructor(props: {}) {
     super(props);
@@ -37,7 +39,11 @@ class App extends React.Component<{}, { query: string }> {
           <SearchInput onChange={this.onQueryChange} />
         </div>
         <div>
-          <AsyncList query={query} render={renderListItem} />
+          <AsyncList
+            query={query}
+            render={renderListItem}
+            errorComponent={errorComponent}
+          />
         </div>
       </div>
     );

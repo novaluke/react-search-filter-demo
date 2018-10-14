@@ -9,6 +9,7 @@ import { fetchFail, fetchSuccess, Update } from "./updates";
 export interface Props {
   query: string;
   render: React.SFC<Meal>;
+  errorComponent: JSX.Element;
 }
 
 export type State = AsyncValue<Meal[]>;

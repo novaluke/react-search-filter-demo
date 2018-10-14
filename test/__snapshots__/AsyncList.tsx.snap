@@ -2,12 +2,6 @@
 
 exports[`AsyncList when created with a blank query string renders nothing 1`] = `<div />`;
 
-exports[`AsyncList when created with a query string when an error is encountered displays an error message 1`] = `
-<span>
-  An error occurred
-</span>
-`;
-
 exports[`AsyncList when created with a query string when the API query is successful with no matches found shows a message indicating no results matched the query 1`] = `
 <span>
   No results found for "

@@ -5,7 +5,7 @@ import { ajax } from "rxjs/ajax";
 import snapshotDiff from "snapshot-diff";
 
 import { AsyncList } from "AsyncList";
-import { Meal } from "AsyncList/operators";
+import { Meal, Props } from "AsyncList/operators";
 
 const stubRequest = (query: string, resultsOrError: Meal[] | null | Error) => {
   jest.spyOn(ajax, "getJSON").mockImplementation((url: string) => {
@@ -22,6 +22,14 @@ describe("AsyncList", () => {
   const renderFn = jest.fn();
   const errText = "This is an error message";
   const errorComponent = <span>{errText}</span>;
+  const defaultProps: Props = {
+    errorComponent,
+    query: "",
+    render: renderFn,
+  };
+  const component = (props: Partial<Props> = {}) => (
+    <AsyncList {...defaultProps} {...props} />
+  );
   const meals = [
     { idMeal: "123", strMeal: "Spicy Chicken" },
     {
@@ -39,13 +47,7 @@ describe("AsyncList", () => {
 
   describe("when created with a blank query string", () => {
     it("renders nothing", () => {
-      const { container } = render(
-        <AsyncList
-          query={""}
-          render={renderFn}
-          errorComponent={errorComponent}
-        />,
-      );
+      const { container } = render(component());
 
       expect(renderFn).not.toHaveBeenCalled();
       // Use a snapshot rather than asserting on number of child nodes - child
@@ -59,13 +61,7 @@ describe("AsyncList", () => {
     const query = "chicken";
 
     it("displays a loading indicator", () => {
-      const indicator = render(
-        <AsyncList
-          query={query}
-          render={renderFn}
-          errorComponent={errorComponent}
-        />,
-      ).queryByTestId("loading");
+      const indicator = render(component({ query })).queryByTestId("loading");
       expect(indicator).not.toBeNull();
     });
 
@@ -75,13 +71,7 @@ describe("AsyncList", () => {
       });
 
       it("renders the results", () => {
-        render(
-          <AsyncList
-            query={query}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        render(component({ query }));
         jest.runAllTimers();
 
         expect(renderFn).toHaveBeenCalledTimes(2);
@@ -93,13 +83,7 @@ describe("AsyncList", () => {
         it("shows a message indicating no results matched the query", () => {
           // API returns `meals: null` rather than `meals: []` when no match found
           stubRequest(query, null);
-          const { queryByText } = render(
-            <AsyncList
-              query={query}
-              render={renderFn}
-              errorComponent={errorComponent}
-            />,
-          );
+          const { queryByText } = render(component({ query }));
           jest.runAllTimers();
 
           expect(queryByText(query, { exact: false })).toMatchSnapshot();
@@ -107,13 +91,7 @@ describe("AsyncList", () => {
       });
 
       it("hides the loading indicator", () => {
-        const { queryByTestId } = render(
-          <AsyncList
-            query={query}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        const { queryByTestId } = render(component({ query }));
         jest.runAllTimers();
 
         // Allow axios promise to resolve before asserting
@@ -127,39 +105,21 @@ describe("AsyncList", () => {
       });
 
       it("renders the errorComponent prop", () => {
-        const { queryByText } = render(
-          <AsyncList
-            query={query}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        const { queryByText } = render(component({ query }));
         jest.runAllTimers();
 
         expect(queryByText(errText)).not.toBeNull();
       });
 
       it("hides the loading indicator", () => {
-        const { queryByTestId } = render(
-          <AsyncList
-            query={query}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        const { queryByTestId } = render(component({ query }));
         jest.runAllTimers();
 
         expect(queryByTestId("loading")).toBeNull();
       });
 
       it("doesn't display the 'no results' message", () => {
-        const { queryByText } = render(
-          <AsyncList
-            query={query}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        const { queryByText } = render(component({ query }));
         jest.runAllTimers();
 
         expect(queryByText(query, { exact: false })).toBeNull();
@@ -177,11 +137,7 @@ describe("AsyncList", () => {
       ));
       stubRequest(firstQuery, meals);
       const { asFragment, getByTestId, rerender } = render(
-        <AsyncList
-          query={firstQuery}
-          render={renderFn}
-          errorComponent={errorComponent}
-        />,
+        component({ query: firstQuery }),
       );
       jest.runAllTimers();
       const firstRender = asFragment();
@@ -189,13 +145,7 @@ describe("AsyncList", () => {
       // Leave the second request hanging so that it doesn't resolve before
       // checking the loading indicator
       (ajax.getJSON as any).mockImplementation(() => never());
-      rerender(
-        <AsyncList
-          query={secondQuery}
-          render={renderFn}
-          errorComponent={errorComponent}
-        />,
-      );
+      rerender(component({ query: secondQuery }));
 
       await waitForElement(() => getByTestId("loading"));
       expect(snapshotDiff(firstRender, asFragment())).toMatchSnapshot();
@@ -205,11 +155,7 @@ describe("AsyncList", () => {
       it("removes the 'no matches found' message", () => {
         stubRequest(firstQuery, null);
         const { queryByText, rerender } = render(
-          <AsyncList
-            query={firstQuery}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
+          component({ query: firstQuery }),
         );
         jest.runAllTimers();
         // Avoid false positives
@@ -218,13 +164,7 @@ describe("AsyncList", () => {
         // Leave the second request hanging so that it doesn't resolve before
         // checking the loading indicator
         (ajax.getJSON as any).mockImplementation(() => never());
-        rerender(
-          <AsyncList
-            query={secondQuery}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        rerender(component({ query: secondQuery }));
 
         expect(queryByText(firstQuery, { exact: false })).toBeNull();
         expect(queryByText(secondQuery, { exact: false })).toBeNull();
@@ -235,11 +175,7 @@ describe("AsyncList", () => {
       it("hides the error message", async () => {
         stubRequest(firstQuery, new Error("Mocked XHR error"));
         const { getByTestId, queryByText, rerender } = render(
-          <AsyncList
-            query={firstQuery}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
+          component({ query: firstQuery }),
         );
         jest.runAllTimers();
         expect(queryByText(errText)).not.toBeNull();
@@ -247,13 +183,7 @@ describe("AsyncList", () => {
         // Leave the second request hanging so that it doesn't resolve before
         // checking the "loading" state
         (ajax.getJSON as any).mockImplementation(() => never());
-        rerender(
-          <AsyncList
-            query={secondQuery}
-            render={renderFn}
-            errorComponent={errorComponent}
-          />,
-        );
+        rerender(component({ query: secondQuery }));
 
         await waitForElement(() => getByTestId("loading"));
         expect(queryByText(errText)).toBeNull();
@@ -274,22 +204,10 @@ describe("AsyncList", () => {
 
     it("debounces the request", () => {
       stubRequest(firstQuery, meals);
-      const { rerender } = render(
-        <AsyncList
-          query={firstQuery}
-          render={renderFn}
-          errorComponent={errorComponent}
-        />,
-      );
+      const { rerender } = render(component({ query: firstQuery }));
 
       stubRequest(secondQuery, meals2);
-      rerender(
-        <AsyncList
-          query={secondQuery}
-          render={renderFn}
-          errorComponent={errorComponent}
-        />,
-      );
+      rerender(component({ query: secondQuery }));
 
       // Time has not advanced, due to using jest.useFakeTimers, so the debounce
       // timeout has not been cleared, and no calls should have been made

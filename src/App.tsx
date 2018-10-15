@@ -1,7 +1,8 @@
 import React from "react";
 
-import { AsyncList, Meal } from "./AsyncList";
-import SearchInput from "./SearchInput";
+import { AsyncList, createQueryHandler, Meal } from "AsyncList";
+import { AsyncValue, init } from "common/async";
+import { SearchInput } from "SearchInput";
 
 const styles = {
   headerBar: {
@@ -19,20 +20,44 @@ const renderListItem = ({ idMeal, strMeal }: Meal) => (
 
 const errorComponent = <span>An unknown error occurred</span>;
 
-class App extends React.Component<{}, { query: string }> {
+interface State {
+  query: string;
+  results: AsyncValue<Meal[]>;
+}
+
+class App extends React.Component<{}, State> {
+  private createQueryHandler: (url: string) => void;
+
   constructor(props: {}) {
     super(props);
     this.state = {
       query: "",
+      results: init(),
     };
+
+    const { handler: queryHandler, results$ } = createQueryHandler(
+      response => response.meals || [],
+    );
+    // Enable other methods to send new queries
+    this.createQueryHandler = queryHandler;
+    // When results arrive, add them to the state
+    results$.subscribe(results => this.setState({ results }));
   }
 
   public onQueryChange = (query: string) => {
     this.setState({ query });
+    // Reset back to initial state if there is no query - sending a blank query
+    // makes no sense for this use case
+    if (query.length > 0) {
+      const url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`;
+      this.createQueryHandler(url);
+    } else {
+      this.setState({ results: init() });
+    }
   };
 
   public render() {
-    const { query } = this.state;
+    const { query, results } = this.state;
     const noResultsComponent = <span>No results found for "{query}"</span>;
     return (
       <div>
@@ -41,7 +66,7 @@ class App extends React.Component<{}, { query: string }> {
         </div>
         <div>
           <AsyncList
-            query={query}
+            results={results}
             render={renderListItem}
             errorComponent={errorComponent}
             noResultsComponent={noResultsComponent}

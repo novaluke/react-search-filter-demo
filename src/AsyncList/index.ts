@@ -1,2 +1,6 @@
-export { default as AsyncList } from "./AsyncList";
-export { Meal, Props as AsyncListProps } from "./operators";
+export {
+  default as AsyncList,
+  Meal,
+  Props as AsyncListProps,
+} from "./AsyncList";
+export { default as createQueryHandler } from "./createQueryHandler";

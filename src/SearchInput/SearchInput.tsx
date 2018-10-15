@@ -15,7 +15,7 @@ import {
   withLatestFrom,
 } from "rxjs/operators";
 
-import { mapPropsStream } from "./streamHelpers";
+import { mapPropsStream } from "common/streamHelpers";
 
 import "./SearchInput.css";
 
@@ -96,7 +96,7 @@ const SearchInputComponent: React.SFC<ComponentProps> = ({
   </label>
 );
 
-export const SearchInput = compose<ComponentProps, Props>(
+const SearchInput = compose<ComponentProps, Props>(
   withDefaultProps(defaultProps),
   withStateHandlers<State, StateHandlerMap<State>, Props>(initialState, {
     handleChange: () => ({ target: { value } }: ChangeEvent) => ({ value }),
@@ -113,8 +113,8 @@ export const SearchInput = compose<ComponentProps, Props>(
     props$
       .pipe(
         map(({ value }) => value),
-        skip(1), // Don't trigger from `initialState` being set
         distinctUntilChanged(),
+        skip(1), // Don't trigger from `initialState` being set
         withLatestFrom(props$),
       )
       .subscribe(([value, { onChange }]) => onChange(value));

@@ -3,7 +3,7 @@ jest.mock("react-spring");
 import React from "react";
 import { fireEvent, render } from "react-testing-library";
 
-import SearchInput from "SearchInput";
+import { SearchInput } from "SearchInput";
 
 describe("SearchInput", () => {
   const noop = jest.fn();

@@ -1,8 +1,11 @@
 import React from "react";
+import { of } from "rxjs";
 
 import { AsyncList, createQueryHandler, Meal } from "AsyncList";
 import { AsyncValue, init } from "common/async";
 import { SearchInput } from "SearchInput";
+
+import { renderM } from "frp";
 
 const styles = {
   headerBar: {
@@ -25,6 +28,12 @@ interface State {
   results: AsyncValue<Meal[]>;
 }
 
+const { ele: SearchInputEle, value: query$ } = renderM(
+  SearchInput({
+    setValue$: of(""),
+  }),
+);
+
 class App extends React.Component<{}, State> {
   private createQueryHandler: (url: string) => void;
 
@@ -44,6 +53,10 @@ class App extends React.Component<{}, State> {
     results$.subscribe(results => this.setState({ results }));
   }
 
+  public componentDidMount() {
+    query$.subscribe(this.onQueryChange);
+  }
+
   public onQueryChange = (query: string) => {
     this.setState({ query });
     // Reset back to initial state if there is no query - sending a blank query
@@ -61,9 +74,7 @@ class App extends React.Component<{}, State> {
     const noResultsComponent = <span>No results found for "{query}"</span>;
     return (
       <div>
-        <div style={styles.headerBar}>
-          <SearchInput onChange={this.onQueryChange} />
-        </div>
+        <div style={styles.headerBar}>{SearchInputEle}</div>
         <div>
           <AsyncList
             results={results}

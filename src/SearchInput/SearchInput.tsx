@@ -1,141 +1,132 @@
-import React from "react";
 import { FaSearch, FaTimesCircle } from "react-icons/fa";
 import { Spring } from "react-spring";
-import {
-  compose,
-  defaultProps as withDefaultProps,
-  StateHandlerMap,
-  withStateHandlers,
-} from "recompose";
-import {
-  distinctUntilChanged,
-  filter,
-  map,
-  skip,
-  withLatestFrom,
-} from "rxjs/operators";
-
-import { mapPropsStream } from "common/streamHelpers";
+import { combineLatest, merge, Observable, of, ReplaySubject } from "rxjs";
+import { map, mapTo, startWith } from "rxjs/operators";
 
 import "./SearchInput.css";
 
-interface ChangeEvent {
-  target: { value: string };
-}
+import { dyn, el, M, mdo, rec, text, textInput, toComponent } from "frp";
 
 export interface Props {
-  onChange: (value: string) => void;
-  setValue?: string;
-  closedWidth?: number;
-  openWidth?: number;
-  color?: string;
+  setValue$: Observable<string>;
+  closedWidth$?: Observable<number>;
+  openWidth$?: Observable<number>;
+  color$?: Observable<string>;
 }
 
-interface State {
-  isOpen: boolean;
-  value: string;
-}
-
-interface Handlers {
-  handleChange: (e: ChangeEvent) => void; // `onChange` is already taken by Props
-  onFocus: () => void;
-  onBlur: () => void;
-  reset: () => void;
-}
-
-type ComponentProps = Props & State & Handlers;
-
-const initialState: State = { isOpen: false, value: "" };
-
-const defaultProps: Partial<Props> = {
-  closedWidth: 5,
-  color: "white",
-  openWidth: 200,
+// TODO figure out how to type this so that it warns if it doesn't match up with
+// Props, but also so that it doesn't tell TS that any of these might not exist
+const defaultProps = {
+  closedWidth$: of(5),
+  color$: of("white"),
+  openWidth$: of(200),
 };
 
-const SearchInputComponent: React.SFC<ComponentProps> = ({
-  // Props
-  closedWidth,
-  openWidth,
-  color,
-  // State
-  isOpen,
-  value,
-  // Handlers
-  handleChange,
-  onFocus,
-  onBlur,
-  reset,
-}) => (
-  <label
-    className="search-input-container"
-    style={{ color, borderColor: color }}
-  >
-    <Spring
-      from={{ width: closedWidth }}
-      to={{ width: isOpen ? openWidth : closedWidth }}
-    >
-      {({ width }) => (
-        <input
-          type="text"
-          value={value}
-          className="search-input-textinput"
-          style={{ width }}
-          onChange={handleChange}
-          onFocus={onFocus}
-          onBlur={onBlur}
-          placeholder={isOpen ? "Search for Media..." : ""}
-        />
-      )}
-    </Spring>
-    {value ? (
-      <FaTimesCircle className="search-input-icon" onClick={reset} />
-    ) : (
-      <FaSearch className="search-input-icon" />
-    )}
-  </label>
-);
+function makeStream<T>(seed?: T) {
+  const subject = new ReplaySubject<T>();
+  return {
+    push: subject.next.bind(subject) as (val: T) => void,
+    stream: seed === undefined ? subject : subject.pipe(startWith(seed)),
+  };
+}
 
-const SearchInput = compose<ComponentProps, Props>(
-  withDefaultProps(defaultProps),
-  withStateHandlers<State, StateHandlerMap<State>, Props>(initialState, {
-    handleChange: () => ({ target: { value } }: ChangeEvent) => ({ value }),
-    onBlur: ({ value }) => () => (value ? undefined : { isOpen: false }),
-    onFocus: () => () => ({ isOpen: true }),
-    reset: () => () => ({ value: "" }),
-  }),
-  mapPropsStream<ComponentProps, ComponentProps>(props$ => {
-    // Any time the value is changed due to internal state, use the `onChange`
-    // function to notify the parent component. Note: it's important to only use
-    // the *internal* state stream for this, as including `setValue` in the
-    // stream could cause an infinite loop (besides, the parent already knows
-    // when it's triggered `setValue`).
-    props$
-      .pipe(
-        map(({ value }) => value),
-        distinctUntilChanged(),
-        skip(1), // Don't trigger from `initialState` being set
-        withLatestFrom(props$),
-      )
-      .subscribe(([value, { onChange }]) => onChange(value));
-
-    // When setValue is changed (and defined), trigger the value changed
-    // handler. It would be possible to merge the value back in to `props$` to
-    // be returned, but given a handler is already defined for that purpose
-    // using it is more DRY.
-    props$
-      .pipe(
-        map(({ setValue }) => setValue),
-        filter((value): value is string => typeof value === "string"),
-        distinctUntilChanged(),
-        withLatestFrom(props$),
-      )
-      .subscribe(([value, { handleChange }]) =>
-        handleChange({ target: { value } }),
+const mkInput = (
+  setValue: Observable<string>,
+  width$: Observable<number>,
+): M<{ value: Observable<string>; hasFocus: Observable<boolean> }> => {
+  return mdo(b => {
+    return rec<{
+      setValue: string;
+      hasFocus: boolean;
+    }>()(scope => {
+      const { change, value, hasFocus } = b(
+        textInput({
+          attributes: combineLatest(scope.hasFocus, width$).pipe(
+            map(([hasFocus2, width]) => ({
+              className: "search-input-textinput",
+              placeholder: hasFocus2 ? "Search for Media..." : "",
+              style: { width },
+            })),
+          ),
+          setValue: scope.setValue,
+        }),
       );
+      scope.hasFocus = hasFocus;
+      scope.setValue = merge(change, setValue);
+      return { value, hasFocus };
+    });
+  });
+};
 
-    return props$;
-  }),
-)(SearchInputComponent);
+const SearchInput: (props: Props) => M<Observable<string>> = props => {
+  const { setValue$, closedWidth$, openWidth$, color$ } = {
+    ...defaultProps,
+    ...props,
+  };
+  return mdo(a => {
+    const labelProps = color$.pipe(
+      map(color => ({
+        className: "search-input-container",
+        style: {
+          color,
+          borderColor: color,
+        },
+      })),
+    );
+    return a(
+      el("label", labelProps, b => {
+        interface SpringProps {
+          from: { width: number };
+          to: { width: number };
+          render: (props: { width: number }) => void;
+        }
+        return rec<{ reset$: void; springProps: SpringProps }>()(scope => {
+          b(el(Spring, scope.springProps, text("")));
+          const {
+            component: renderInput,
+            value: { value, hasFocus },
+          } = toComponent((props$: Observable<{ width: number }>) => {
+            const width$ = props$.pipe(map(({ width }) => width));
+            return mkInput(
+              merge(scope.reset$.pipe(mapTo("")), setValue$),
+              width$,
+            );
+          });
+
+          scope.springProps = combineLatest(
+            closedWidth$,
+            openWidth$,
+            hasFocus,
+          ).pipe(
+            map(([closedWidth, openWidth, isOpen]) => ({
+              from: { width: closedWidth },
+              render: renderInput,
+              to: { width: isOpen === true ? openWidth : closedWidth },
+            })),
+          );
+          // Only needed because we don't have a way to hook up DOM events
+          // properly yet
+          const { push, stream } = makeStream<void>();
+          scope.reset$ = stream;
+          // prettier-ignore
+          b(dyn(value.pipe(map(val =>
+            val
+              ? el(
+                  FaTimesCircle,
+                  of({ className: "search-input-icon", onClick: push }),
+                  text(""), // TODO allow childM to be omitted
+                )
+              : el(
+                  FaSearch,
+                  of({ className: "search-input-icon" }),
+                  text(""),
+                ),
+          ))));
+          return value;
+        });
+      }),
+    );
+  });
+};
 
 export default SearchInput;

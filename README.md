@@ -22,6 +22,14 @@
         1. [Filter (Simple)](#filter-simple)
         1. [Filter (Redux-ish)](#filter-redux-ish)
         1. [Filter (RxJS + `recompose`)](#filter-rxjs--recompose)
+    1. [Modular components](#modular-components)
+    1. [Custom reflex-inspired FRP solution](#custom-reflex-inspired-frp-solution)
+        1. [How it works](#how-it-works)
+        1. [Monadic component builder](#monadic-component-builder)
+        1. [Streaming outputs](#streaming-outputs)
+        1. [Recursive components](#recursive-components)
+        1. [Converting back into React-land](#converting-back-into-react-land)
+        1. [Custom FRP summary](#custom-frp-summary)
 1. [Conclusion](#conclusion)
 
 # Introduction
@@ -690,7 +698,7 @@ The benefits:
 - No need to deal with React's lifecycle methods
 
 Just as with any approach, there are a few caveats, however. For one, this
-style has not been heavily adopted yet by the React community, so there are
+style has not been as heavily adopted yet by the React community, so there are
 fewer guidelines on good architecture. It's also a bigger paradigm shift than
 the other options for state management, so it may not be appropriate for every
 team.
@@ -709,6 +717,262 @@ so all of the code involving stubbing it out had to be changed as well. This is
 one of the reasons why it's valuable to avoid stubbing/mocking whenever
 possible, as now we have a lot of lines of test code to go through to check that
 nothing was changed incorrectly (though in this case that was unavoidable).
+
+## Modular components
+
+*(this code viewable on the `modular-components` branch)*
+
+As mentioned, although the previous approaches did solve many problems, the
+solutions still suffered from a lack of modularity and separation of concerns.
+To address this, a fairly large-scale refactor needs to be made (at least in
+terms of how much of the existing codebase it touches - the changes themselves
+are not especially complex, fortunately).
+
+The changes include:
+
+- Refactoring SearchInput to use `recompose`+`rxjs` as well. This allows for
+  sensible semantics for allowing the parent component to reset the search query
+  to a specific value by changing the `setValue` prop. This would be useful when
+  the query is tied to the route params and the host app navigates to a new
+  route, for example.
+- Extract the functionality of rendering list items out from `Filter` into a
+  `render` prop. This provides better customization of the component while also
+  improving separation of concerns.
+- Just as the `Filter` shouldn't be in charge of - or hardcode - the rendering
+  of list items, it also shouldn't be responsible for what error message is
+  shown when an error occurs (only the host knows how it wants to communicate to
+  its users, after all). Therefore, extract that functionality out into the
+  `errorComponent` prop. Note that in this case the prop is just a component,
+  not a render function. This is because the host has access to the error as
+  well, and can just update the `errorComponent` prop based on that error,
+  rather than having to wrap that functionality up into a function to pass in to
+  `Filter`.
+- In the same vein, allow the message for when no results are found to also be
+  specified by the parent component via `noResultsComponent`.
+- Additionally, `Filter` should not be responsible for the API URL to query, nor
+  how to extract the data from it. However, a component's responsibility is
+  displaying data, not fetching or manipulating it. Therefore, the querying
+  functionality can - and should - be extracted to a separate function for the
+  host component to use, rather than keeping it within `Filter`. Extracting that
+  functionality to `createQueryHandler` provides the parent component with a
+  simple to use API for querying and extracting results, with built-in
+  debouncing (ideally the debounce interval would be customizable - or
+  disable-able, but I have omitted that for the sake of brevity). As a result,
+  AsyncList now needs to accept its data via props, utilizing the `AsyncValue`
+  type for strong typing. This has the added benefit of allow the host to use
+  any method it wants to fetch the data, such as local storage, for example,
+  without being tied to the implementation of `createQueryHandler`.
+- Now that `Filter` really has no responsibility for filtering, we rename it to
+  `AsyncList` to better suit its new - and more appropriate - role.
+- And, finally, this branch also includes a few miscellaneous improvements, such
+  as a tidied up and more organized directory structure.
+
+Overall, we end up with highly modular and customizable components that maintain
+an appropriate scope of responsibility without forcing too much burden onto the
+parent components. This meets the overall goal of reusable components ready to
+be used as part of a component library.
+
+## Custom `reflex`-inspired FRP solution
+
+*(this code viewable on the `custom-frp` branch)*
+
+As mentioned before when introducing [RxJS and
+`recompose`](#filter-rxjs--recompose), Functional Programming and Functional
+Reactive Programming convey massive benefits to front-end apps. However,
+`recompose`'s architecture of wrapping all the inputs to a component as a single
+Observable object is not necessarily ideal. It forces a specific architecture,
+and in doing so makes it difficult to work in any other way than jumping through
+those specific hoops. `recompose` also requires pushing event handler functions
+to child components to handle child outputs rather than consuming stream outputs
+in true FRP fashion. This is consistent with React's one-way data binding model,
+but it does incur a level of cognitive overhead, and it doesn't mesh well with
+the conceptual model of FRP, where it would make more sense to consume streaming
+outputs instead.
+
+The FRP implementation I have been most impressed by in the past is
+[reflex](https://github.com/reflex-frp/reflex), an FRP library for Haskell (with
+a front-end specific library called
+[reflex-dom](https://github.com/reflex-frp/reflex-dom)). Having been impressed
+by its power and flexibility in the past, I wanted to see if a similar approach
+could be brought to React, in an attempt to address some of the concerns with
+`recompose`. However, JS and Haskell are *very* different languages with vastly
+different capabilities, even with TypeScript helping to bridge some of the gap.
+Furthermore, React's one-way data binding is naturally at odds with the FRP
+model of consuming streaming outputs, so integrating the reflex model into React
+caused its fair share of friction.  However, with a hefty does of blood, sweat,
+and creativity, a feasible proof-of-concept is possible. For now, let's call
+that proof-of-concept `Reactive` (a portmanteau of "React" and "Functional
+*Reactive* Programming").
+
+### How it works
+
+Imagine a component that accepts a color prop, and renders a text input whose
+background color changes based on that prop. In `Reactive`, that might look like
+the following:
+
+```ts
+// A function that takes the color Observable and returns an Observable of
+// changes to the input value
+const example = ({ color$ }): Observable<string> => mdo(a => {
+  // Render a `div` with no attributes, and a function that will take a
+  // mysterious `b` parameter (more on that below) and use it to create the
+  // children of the `div`
+  a(el("div", {}, b => {
+    // Map the color into the attributes for the input element
+    const attributes = color$.pipe(map(color => ({ style: { backgroundColor: color } })));
+    // Set up a recursive block where we can refer to streams before they're "created"
+    return rec<{ setValue: string }>()(scope => {
+      // Use the attributes stream and the setValue stream to create the
+      // textInput, even though the setValue stream isn't "created" until after
+      // the textInput is created.
+      const { change } = b(textInput({ setValue: scope.setValue, attributes }));
+      scope.setValue = change;
+      // The return value of the `rec` block will be the return value of the
+      // `rec function - this allows values to be passed back up to the parent
+      // scope to be used outside the `rec` block.
+      return change;
+    });
+  }));
+});
+```
+
+There's a lot going on there, so let's break it down concept by concept.
+
+### Monadic component builder
+
+Unlike `recompose`, Reactive follows `reflex`'s lead and returns streaming
+outputs from components, rather than having the parent pass in event handler
+functions. However, this doesn't jive with React's one-way model, so
+unfortunately JSX is out of the question. Furthermore, it would be a mess to be
+constantly having to extract out the outputs *and* the elements out of a
+component's return value and then pass those elements back up to the parent to
+be part of its children. Fortunately Functional Programming already has a great
+way to deal with data that should be implicitly passed around without having to
+explicitly work with it - monads. Unfortunately JS does not have monads, and is
+not well-suited to working with them. Reactive's component-building "monad"
+(called `M` for monad, since [naming things is
+hard](https://martinfowler.com/bliki/TwoHardThings.html)) does make it possible
+for a component function to add its elements to the current render output
+seamlessly, allowing the consuming function to only worry about working with the
+output, but it does come at the cost of some additional syntax overhead compared
+to the Haskell version.
+
+`mdo` is analogous to `do` in Haskell. However, unlike in Haskell, there's no
+way for the functions run within the `mdo` block can't be automatically executed
+within the monadic context, so to do so the "block" (ie. the function passed to
+`mdo`) is passed a function that can run actions within the monadic context
+(which for argument's sake I'll call the "binding" function, though FP purists
+may object!). For example:
+
+```ts
+mdo(a => {
+  // The binding function can be named anything, but to for better clarity when
+  // working with nexted monadic scopes, using `a`, `b`, etc. can be helpful
+  a(el("div", {}, text("This will be added to the monad")));
+  el("div", {}, text("This will not"));
+});
+```
+
+### Streaming outputs
+
+The binding function unpacks and returns the outputs of a monadic value. For
+example:
+
+```ts
+textInput: M<{ change: Observable<string>, hasFocus: Observable<boolean>, ...  }>
+
+mdo(a => {
+  const textInputOutputs = a(textInput(...));
+  return textInputOutputs; // Sets the outputs of this monadic value, just like in Haskell
+});
+```
+
+### Recursive components
+
+Handling outputs by returning streams has one major problem: it can create
+recursive dependencies between components. This is seen in the example above.
+`textInput` is a controlled input, so unless `setValue` is provided to the
+input, user input won't have any effect on it as there is nothing updating the
+input value.
+
+Generally speaking we'll want to update the input based on some kind of
+filtering or mapping of the changes the user makes. In the example, we just want
+to let any input from the user go through, so we need to feed the `change`
+output stream back into the `setValue` input. However, `change` obviously
+doesn't exist until after creating the `textInput`, which requires `setValue`,
+which requires `change`, which requires `setValue`, etc. In other words, we've
+formed a cyclic dependency.
+
+In Haskell this can be easily solved using recursive `do` notation.
+Unfortunately this is just not feasible to reproduce using JS/TS (believe me, I
+tried). Recursive `do` relies on `MonadFix`, which itself relies on `fix`.
+Explaining fixed point functions is way beyond my paygrade, but it is possible
+to write `fix` in JavaScript: `const fix = f => f(() => fix(f))`. In JS, we have
+to wrap the inner `fix` invocation in a zero-arity function because `fix` relies
+on laziness, and thus we must simulate laziness here.
+
+Unfortunately, although this makes emulating `fix` *possible*, it doesn't make
+it *feasible*. Since JS is non-lazy, in order to preserve the laziness
+introduced in `fix`, we also have to make sure that every reference to that
+value is done lazily. This leads to having to wrapping values inside of
+zero-arity functions all the way down the call stack. Which is obviously
+untenable, since any function using that value - even library functions - will
+need to know that it should be accessed via function invocation instead of the
+usual direct value access.
+
+Although it is ultimately impossible to reasonably handle recursive dependencies
+in a direct imitation of Haskell, it *is* still possible to allow one type of of
+value to be referenced recursively: Observables. This is seen in `recompose`,
+actually, in `createEventHandler`. Due to the fact that streams fundamentally
+define values that change over time (or a stream of values emitted over time,
+depending on implementation details), as long as the stream has been created
+prior to the recursive reference, the output of the stream and inputs to the
+stream can be set up and references in any order.
+
+However, `createEventHandler` from `recompose` still requires passing handler
+functions around, and is at odds with the FRP architectural model. Therefore,
+Reactive's `rec` provides a way for recursion to be handled via streams alone,
+without any handler functions. It does this by setting up a `scope` object that
+gets its type information from the generic type parameter given to `rec`. The
+`scope` is actually a Proxy to an underlying object that creates streams of the
+given type whenever they are referenced (whether by `get` or by `set`). When
+that stream is assigned to (ie. `scope.foo = somethingThatMakesAStream()`) the
+`scope` Proxy pipes the given stream's output into the referenced stream.
+
+In summary, `rec<{ name: string }>()(scope => { scope.string = foo(scope.string)
+})` allows recursive dependencies to be resolved by setting up streams on the
+`scope` object that can be either `set` or `get` in any order.
+
+### Converting back into React-land
+
+There are two functions provided for getting Reactive components into a state
+usable by React: `renderM` and `toComponent`.
+
+`renderM` simply extracts both the built-up React node and output value from the
+monadic value. From there, the output value can be used at will, and the
+extracted node can be thrown into JSX at any point (eg.
+`<div>{extractedNode}</div>`).
+
+`toComponent` converts the monadic value into a React SFC. It takes a function
+that can map from a props stream, just like `recompose` (ie. a stream of `props`
+objects), and return a monadic value. It then returns the resulting SFC and
+value extracted from the returned monad. For example:
+
+```ts
+const { component: Foo } = toComponent(props$ =>
+  el("h1", {}, dynText(props$.pipe(pluck("name"))))
+);
+ReactDOM.render(<div><Foo name="Bar" /></div>, document.getElementById("root"));
+```
+
+### Custom FRP summary
+
+Although it's still just a rough proof-of-concept, it is a great example of
+React's flexibility, and what can be achieved with a judicial application of
+elbow grease, determination, and creativity. Given a polishing - such as through
+a custom syntax transformer, like with JSX - Reactive could be a very powerful
+tool for bringing the expressiveness and power of FRP to front end JS
+applications.
 
 # Conclusion
 
